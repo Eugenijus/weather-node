@@ -1,6 +1,10 @@
 const express = require("express");
 const cors = require("cors");
+const axios = require("axios");
+const { query, validationResult } = require("express-validator");
+
 const { weatherCodes } = require("./utils/weatherCodes");
+const { errorHandler } = require("./utils/errorHandler");
 const app = express();
 const PORT = 8080;
 
@@ -13,51 +17,48 @@ app.get("/", (req, res) => {
   res.send("Hello world!");
 });
 
-app.get("/users/:id", async (req, res) => {
-  let response;
-  try {
-    const { id } = req.params;
-    response = await fetch(`https:/reqres.in/api/users/${id}`);
-    if (response.status !== 200) {
-      throw new Error(`There was an error with status code 
-      ${response.status}`);
-    }
-    const user = await response.json();
+app.get(
+  "/weather",
+  [query("lat").isNumeric().toFloat(), query("lon").isNumeric().toFloat()],
+  async (req, res, next) => {
+    try {
+      const validationErrors = validationResult(req);
+      if (!validationErrors.isEmpty()) {
+        const customError = validationErrors.errors.map((error) => {
+          return error.msg + ": " + error.param;
+        });
+        throw new Error(
+          customError +
+            ". Please provide latitude and longitude! " +
+            'like so: "/weather?lat=54.123&lon=25.123"'
+        );
+      }
+      console.log("req.query: ", req.query);
+      let lat = req.query.lat;
+      let lon = req.query.lon;
 
-    if (!user) {
-      res.send("Something went wrong :(");
-    }
-    res.send(user);
-  } catch (error) {
-    console.error(error);
-    res.sendStatus(response.status);
-  }
-});
+      const apiResponse = await axios.get(
+        "https://api.open-meteo.com/v1/forecast?" +
+          "latitude=" +
+          lat +
+          "&longitude=" +
+          lon +
+          "&current_weather=true&hourly=temperature_2m,weathercode"
+      );
 
-app.get("/weather", async (req, res) => {
-  let response;
-  try {
-    console.log("req.query: ", req.query);
-    let lat = req.query.lat;
-    let lon = req.query.lon;
-    response = await fetch(
-      "https://api.open-meteo.com/v1/forecast?" +
-        "latitude=" +
-        lat +
-        "&longitude=" +
-        lon +
-        "&current_weather=true&hourly=temperature_2m,weathercode"
-    );
-    if (response.status !== 200) {
-      throw new Error(`There was an error with status code 
-      ${response.status}`);
+      const jsonResponse = apiResponse.data;
+
+      let responseObject = {};
+      if (jsonResponse?.current_weather) {
+        const { current_weather } = jsonResponse;
+        const weatherText = weatherCodes.get(current_weather.weathercode);
+        responseObject = { ...current_weather, weatherText };
+      }
+      res.send(responseObject);
+    } catch (error) {
+      next(error); // calling next error handling middleware
     }
-    const data = await response.json();
-    const { current_weather } = data;
-    const weatherText = weatherCodes.get(current_weather.weathercode);
-    res.send({ ...current_weather, weatherText });
-  } catch (error) {
-    console.error(error);
-    res.send(error.message);
   }
-});
+);
+
+app.use(errorHandler);
