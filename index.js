@@ -1,12 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
+require("dotenv").config();
 const { query, validationResult } = require("express-validator");
 
 const { weatherCodes } = require("./utils/weatherCodes");
 const { errorHandler } = require("./utils/errorHandler");
 const app = express();
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
+const URL = process.env.WEATHER_API_URL;
 
 app.use(cors());
 app.use(express.json());
@@ -38,7 +40,7 @@ app.get(
       let lon = req.query.lon;
 
       const apiResponse = await axios.get(
-        "https://api.open-meteo.com/v1/forecast?" +
+        URL +
           "latitude=" +
           lat +
           "&longitude=" +
