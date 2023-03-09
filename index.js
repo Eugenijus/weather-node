@@ -21,8 +21,18 @@ app.get("/", (req, res) => {
 
 app.get(
   "/weather",
-  [query("lat").isNumeric().toFloat(), query("lon").isNumeric().toFloat()],
+  [
+    query(["lat", "lon"])
+      .notEmpty()
+      .withMessage("Parameter missing")
+      .isNumeric()
+      .withMessage("Parameter should be numerical")
+      .not()
+      .isArray()
+      .withMessage("Cannot have multiple parameters"),
+  ],
   async (req, res, next) => {
+    console.log("req.query: ", req.query);
     try {
       const validationErrors = validationResult(req);
       if (!validationErrors.isEmpty()) {
@@ -30,12 +40,9 @@ app.get(
           return error.msg + ": " + error.param;
         });
         throw new Error(
-          customError +
-            ". Please provide latitude and longitude! " +
-            'like so: "/weather?lat=54.123&lon=25.123"'
+          customError + '. Example: "/weather?lat=54.123&lon=25.123"'
         );
       }
-      console.log("req.query: ", req.query);
       let lat = req.query.lat;
       let lon = req.query.lon;
 
