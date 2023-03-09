@@ -30,6 +30,12 @@ app.get(
       .not()
       .isArray()
       .withMessage("Cannot have multiple parameters"),
+    query("lat")
+      .isFloat({ min: -90.0, max: 90.0 })
+      .withMessage("A valid latitude must be between -90.0 and 90.0"),
+    query("lon")
+      .isFloat({ min: -180.0, max: 180.0 })
+      .withMessage("A valid longitude may range from -180.0 to 180.0"),
   ],
   async (req, res, next) => {
     console.log("req.query: ", req.query);
