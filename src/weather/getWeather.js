@@ -1,21 +1,14 @@
 const axios = require("axios");
-const { validationResult } = require("express-validator");
 const { weatherCodes } = require("../utils/weatherCodes");
+const { customizeErrorMessage } = require("../utils/errorHandler");
 
 const URL = process.env.WEATHER_API_URL;
 
 const getWeather = async (req, res, next) => {
   console.log("req.query: ", req.query);
   try {
-    const validationErrors = validationResult(req);
-    if (!validationErrors.isEmpty()) {
-      const customError = validationErrors.errors.map((error) => {
-        return error.msg + ": " + error.param;
-      });
-      throw new Error(
-        customError + '. Example: "/weather?lat=54.123&lon=25.123"'
-      );
-    }
+    customizeErrorMessage(req, 'Example: "/weather?lat=54.123&lon=25.123"');
+
     let latitude = req.query.lat;
     let longitude = req.query.lon;
 

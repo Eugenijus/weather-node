@@ -1,6 +1,6 @@
 const { query } = require("express-validator");
 
-const queryValidation = [
+const locationValidation = [
   query(["lat", "lon"])
     .notEmpty()
     .withMessage("Parameter missing")
@@ -18,5 +18,5 @@ const queryValidation = [
 ];
 
 module.exports = {
-  queryValidation,
+  locationValidation,
 };
